@@ -3,23 +3,52 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Monday Clone - ❤</title>
+    <title>Monday Clone - ❤️</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <!-- CDN Firebase-->
-     <script src="https://www.gstatic.com/firebasejs/12.3.0/firebase-app-compat.js"></script>
-     <script src="https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore-compat.js"></script>
-  </head>
+    <link href="css/style.css" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore-compat.js"></script>
+</head>
   <body class="bg-light">
-    <div class="Container py-4">
+    <div class="container py-4">
         <h1 class="text-center mb-4">
-            🚀 Clon de Monday.com
+            Clone de Monday
         </h1>
-        <div class="input-group mb-3">
-            <input type="text" id="taskInput" class="class-control" placeholder="Escribe una tarea...">
-            <button class="btn btn-primary" id="addTaskBtn">Agregar</button>
+        <div class="row">
+            <div class="col-md-3 border-end">
+                <h4>📋Tableros📋</h4>
+                <ul class="list-group mb-3" id="boardList"></ul>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="boardInput" placeholder="Tablero nuevo...">
+                    <button class="btn btn-success" id="addBoardBtn">+</button>
+                </div>
+            </div>
+
+            <div class="col-md-9">
+                <h2 id="boardTitle" class="text-center mb-4">Selecciona un tablero</h2>
+                 <!-- input para las tareas-->
+                <div class="input-group mb-3">
+                <input type="text" id="taskInput" class="form-control" placeholder="Escribe una tarea..." disabled>
+                <button class="btn btn-primary" id="addTaskBtn" disabled>Agregar</button>
+            </div>
+
+                <!-- kanban de tareas-->
+            <div class="row">
+            <!-- pendientes -->
+             <div class="col-md-6">
+                <h4 class="text-danger">Pendientes</h4>
+                <ul class="list-group" id="pendingTasks"></ul>
+             </div>
+               <!-- completadas -->
+             <div class="col-md-6">
+                <h4 class="text-success">Completadas</h4>
+                <ul class="list-group" id="doneTasks"></ul>
+             </div>
+            </div>
+          </div>
         </div>
-        <ul class="list-group" id="taskList"></ul>
     </div>
-    <script src="js/index.js"></script>
-  </body>
+    <script src="js/app.js"></script>
+    </body>
 </html>
