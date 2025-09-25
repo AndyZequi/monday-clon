@@ -52,9 +52,9 @@ db.collection('boards').onSnapshot((tableros) => {
 // Función para seleccionar un tablero
 const selectBoard = (id, name) => {
     currentBoardId = id;
-    boardTitle.textContent = `📋 ${name}`; // Corregido: uso de backticks
-    taskInput.disabled = false; // Corregido: "disabled" en lugar de "disable"
-    addTaskBtn.disabled = false; // Corregido: "disabled" en lugar de "disable"
+    boardTitle.textContent = `📋 ${name}`; 
+    taskInput.disabled = false; 
+    addTaskBtn.disabled = false; 
     loadTasks();
 };
 
