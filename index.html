@@ -9,7 +9,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-auth-compat.js"></script> <!-- AÑADIDO: Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-auth-compat.js"></script> 
 </head>
   <body class="bg-light"> 
     <div class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -42,28 +42,45 @@
 
             <div class="col-md-9">
                 <h2 id="boardTitle" class="text-center mb-4">Inicia sesion para ver tus tableros</h2>
-                 <!-- input para las tareas-->
-                <div class="input-group mb-3">
-                <input type="text" id="taskInput" class="form-control" placeholder="Escribe una tarea..." disabled>
-                <button class="btn btn-primary" id="addTaskBtn" disabled>Agregar</button>
-            </div>
+                <!-- Formulario para crear Tareas-->
+              <div class="card p-3 mb-4">
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <input id="taskInput" type="text" class="forml-control" placeholder="Tarea..." disabled>
+                  </div>
+                  <div class="col-md-3">
+                    <input id="assignedInput" type="text" class="forml-control" placeholder="Asignar a..." disabled>
+                  </div>
+                  <div class="col-md-3">
+                    <select id="statusInput" class="form-select" disabled>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En progreso">En progreso</option>
+                      <option value="Bloqueado">Bloqueado</option>
+                      <option value="Hecho">Hecho</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <select id="prioriryInput" class="form-select" disabled>
+                      <option value="Alta">Alta</option>
+                      <option value="Media" selected>Media</option>
+                      <option value="Baja">Baja</option>
+                    </select>
+                  </div>
+                  <div class="col-md-1">
+                    <button id="addTaskBtn" class="btn btn-primary w-100" disabled>
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
 
                 <!-- kanban de tareas-->
-            <div class="row">
-            <!-- pendientes -->
-             <div class="col-md-6">
-                <h4 class="text-danger">Pendientes</h4>
-                <ul class="list-group" id="pendingTasks"></ul>
-             </div>
-               <!-- completadas -->
-             <div class="col-md-6">
-                <h4 class="text-success">Completadas</h4> <!-- CORREGIDO: 'completadas' -> 'Completadas' -->
-                <ul class="list-group" id="doneTasks"></ul>
-             </div>
+            <div class="row" id="kanbanBoard">
+            
             </div>
           </div>
         </div>
     </div>
-    <script src="js/app.js"></script> <!-- CORREGIDO: '/js/app.js' -> 'js/app.js' -->
+    <script src="js/app.js"></script> 
     </body>
 </html>

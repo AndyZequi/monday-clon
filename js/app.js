@@ -18,6 +18,11 @@ const taskInput = document.getElementById('taskInput');
 const addTaskBtn = document.getElementById('addTaskBtn');
 const pendingTasks = document.getElementById('pendingTasks');
 const doneTasks = document.getElementById('doneTasks');
+// Elementos Nuevos
+const assignedInput = document.getElementById('assignedInput');
+const statusInput = document.getElementById('statusInput');
+const priorityInput = document.getElementById('priorityInput');
+const kanbanBoard = document.getElementById('kanbanBoard');
 
 // Referencias al tablero
 const boardTitle = document.getElementById('boardTitle');
@@ -34,6 +39,7 @@ const userInfo = document.getElementById('userInfo');
 let currentBoardId = null;
 let currentUser = null;
 let unsubscribeBoards = null; // Para manejar la suscripción a tableros
+const STATUSES = ['Pendiente', 'En Progreso', 'Bloqueado', 'Hecho'];
 
 //Funciones para login y logout con Google 
 loginBtn.addEventListener('click', async () => {
@@ -58,7 +64,7 @@ auth.onAuthStateChanged(user => {
         boardList.disabled = false
         boardInput.disabled = false
         addBoardBtn.disabled = false
-        loadBoards() // CORREGIDO: Ahora cargamos los tableros del usuario
+        loadBoards() 
     }else {
         currentUser = null
         userInfo.textContent = 'No autenticado'
@@ -88,7 +94,7 @@ addBoardBtn.addEventListener('click', async () => {
     if (name && currentUser) {
         await db.collection('boards').add({ 
             name: name,
-            userId: currentUser.uid, // CORREGIDO: Agregar el usuario dueño del tablero
+            userId: currentUser.uid, 
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         boardInput.value = '';
@@ -99,7 +105,7 @@ addBoardBtn.addEventListener('click', async () => {
 const loadBoards = () => {
     if (!currentUser) return;
     
-    // Cancelar suscripción anterior si existe
+// Cancelar suscripción anterior si existe
     if (unsubscribeBoards) {
         unsubscribeBoards();
     }
@@ -134,18 +140,87 @@ const loadBoards = () => {
 const selectBoard = (id, name) => {
     currentBoardId = id;
     boardTitle.textContent = `📋 ${name}`; 
-    taskInput.disabled = false; 
-    addTaskBtn.disabled = false; 
+    renderKanban();
+    enableTaskForm();
     loadTasks();
 };
 
+// Funcion para habilitar inputs del formuladio de tareas
+const enableTaskForm = () => {
+    taskInput.disabled = false;
+    assignedInput.disabled = false;
+    priorityInput.disabled = false;
+    addTaskBtn.disabled = false;
+    statusInput.disabled = false;
+}
+
+// Funcion para des - habilitar inputs del formuladio de tareas
+const disableTaskForm = () => {
+    taskInput.disabled = true;
+    assignedInput.disabled = true;
+    priorityInput.disabled = true;
+    addTaskBtn.disabled = true;
+    statusInput.disabled = true;
+}
+
+// Helpers para color de prioridad y status
+const getStatusColor = (status) => {
+    switch (status) {
+        case 'Pendiente': return 'secondary'
+        case 'En Progreso': return 'info'
+        case 'Bloqueado': return 'warning'
+        case 'Hecho': return 'success'
+        default: return 'dark'
+    }
+}
+
+const getPriorityColor = (priority) => {
+    switch (priority) {
+        case 'Alta': return 'danger'
+        case 'Media': return 'primary'
+        case 'Baja': return 'sucess'
+        default: return 'secondary'
+    }
+}
+
 // Cargar tareas del tablero seleccionado
 const loadTasks = () => {
+
+    db.collection('tasks')
+    .where('boardId', '==', currentBoard)
+    .where('UserId', '==', currentUser.uid)
+    .onSnapshot(snapshot => {
+        document.querySelectorAll('.kanban-col').forEach(col => col.innerHTML='')
+        snapshot.forEach((doc) => {
+            const task = doc.data()
+            const card = document.createElement('div')
+            card.clasName='card p-2 kanban-task'
+            card.draggable = true
+            card.dataset.id = doc.id
+             li.innnerHTML = 
+                `
+                <strong>${task.text}</strong>
+                <small>${task.assigned}</small>
+                <span class="badge bg-${getStatusColor(task.status)}>${task.status}</span>
+                <span class="badge bg-${getPriorityColor(task.priority)}>${task.priority}</span>
+                <button class="btn btn-sm btn-outline-danger">🗑</button>
+                `
+            //drag events
+            card.addEventListener('dragstart', e => {
+                e.preventDefault()
+                e.dataTransfer.setData('taskId', doc.id)
+            })
+            card.querySelector('button').onclik = () => db.collection ('task').doc(doc.id).delete() // Checkbox para marcar como hecho
+
+            const col = document.querySelector('.kanban-col[data-status="${task.status}"')
+        })
+    })
+
     if (!currentBoardId || !currentUser) return;
     
     db.collection('tasks')
         .where('boardId', '==', currentBoardId)
-        .where('userId', '==', currentUser.uid) // CORREGIDO: Filtrar por usuario
+        .where('userId', '==', currentUser.uid) 
         .onSnapshot((tareas) => {
             pendingTasks.innerHTML = '';
             doneTasks.innerHTML = '';
@@ -155,32 +230,23 @@ const loadTasks = () => {
                 const li = document.createElement('li');
                 li.classList = 'list-group-item d-flex justify-content-between align-items-center';
 
-                const leftDiv = document.createElement('div');
-                leftDiv.classList = 'd-flex align-items-center';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.classList = 'form-check-input me-2';
-                checkbox.checked = task.done;
-                checkbox.onchange = () => db.collection('tasks').doc(doc.id).update({ done: checkbox.checked });
-
-                const span = document.createElement('span');
-                span.textContent = task.text;
-                if (task.done) {
-                    span.style.textDecoration = 'line-through';
-                }
-
-                leftDiv.appendChild(checkbox);
-                leftDiv.appendChild(span);
-
-                const delBtn = document.createElement('button');
-                delBtn.classList = 'btn btn-danger btn-sm';
-                delBtn.textContent = 'Eliminar';
-                delBtn.onclick = () => db.collection('tasks').doc(doc.id).delete();
-
-                li.appendChild(leftDiv);
-                li.appendChild(delBtn);
-                
+                // card de las tareas
+                li.innnerHTML = 
+                `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${task.text}</strong>
+                        <small>${task.assigned}</small>
+                        <span class="badge bg-${getStatusColor(task.status)}>${task.status}</span>
+                        <span class="badge bg-${getPriorityColor(task.priority)}>${task.priority}</span>
+                    <div>
+                    <div>
+                    <button class="btn btn-sm btn-outline-danger">🗑</button>
+                    </div>
+                <div> 
+                `
+                li.querySelector('button').onclik = () => db.collection ('task').doc(doc.id).delete() // Checkbox para marcar como hecho
+                            
                 if (task.done) {
                     doneTasks.appendChild(li);
                 } else {
@@ -193,15 +259,27 @@ const loadTasks = () => {
 // Agregar evento para crear tareas
 addTaskBtn.addEventListener('click', async () => {
     const text = taskInput.value.trim();
-    if (text && currentBoardId && currentUser) {
+    const assigned = assignedInput.value.trim();
+    const status = statusInput.value;
+    const priority = priorityInput.value;
+
+    if (text && assigned && currentBoardId && currentUser) {
         await db.collection('tasks').add({
-            text: text,
-            done: false,
+            text,
+            status,
+            priority,
+            assigned,
+            done: status === 'Hecho',
             boardId: currentBoardId,
-            userId: currentUser.uid, // CORREGIDO: Agregar el usuario dueño de la tarea
+            userId: currentUser.uid, 
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         taskInput.value = '';
+        assignedInput.value = '';
+        statusInput.value = 'Pendiente';
+        priorityInput.value = 'Media';
+    }else {
+        alert('Por favor, seleciona un tablero y escribe una tarea.');
     }
 });
 
@@ -211,3 +289,33 @@ taskInput.addEventListener('keypress', (e) => {
         addTaskBtn.click();
     }
 });
+
+const renderKanban = () => {
+    kanbanBoard.innerHTML = '';
+    STATUSES.forEach(status => {
+        const col = document.createElement('div');
+        col.className = 'col-md-3'
+        col.innerHTML = 
+        `
+        <h5 class='text-center'>${status}</h5>
+        <div class='kanban-col' data-spurce='${status}'></div>
+        `
+        kanbanBoard.apppendChild(col)
+
+        // Eventos Drag & Drop
+        const dropZone = col.querySelector('.kanban-col')
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over')
+        })
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over')
+        })
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault()
+            dropZone.classList.remove('drag-over')
+            const taskId = e.dragTranfer.getData('taskId')
+            updateTaskStatus(taskId, status)
+        })
+    })
+}

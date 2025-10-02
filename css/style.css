@@ -1,0 +1,17 @@
+.kanban-col{
+    min-height : 300px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.kanban-task {
+    cursor : grab;
+    margin-bottom: 10px;
+}
+
+.hamban-col.drag-over {
+    background-color: #E0F7FA;
+    border-color: #007BFF;
+}
