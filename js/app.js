@@ -105,7 +105,7 @@ addBoardBtn.addEventListener('click', async () => {
 const loadBoards = () => {
     if (!currentUser) return;
     
-// Cancelar suscripción anterior si existe
+    // Cancelar suscripción anterior si existe
     if (unsubscribeBoards) {
         unsubscribeBoards();
     }
@@ -178,82 +178,46 @@ const getPriorityColor = (priority) => {
     switch (priority) {
         case 'Alta': return 'danger'
         case 'Media': return 'primary'
-        case 'Baja': return 'sucess'
+        case 'Baja': return 'success'
         default: return 'secondary'
     }
 }
 
 // Cargar tareas del tablero seleccionado
 const loadTasks = () => {
+    if (!currentBoardId || !currentUser) return;
 
     db.collection('tasks')
-    .where('boardId', '==', currentBoard)
-    .where('UserId', '==', currentUser.uid)
+    .where('boardId', '==', currentBoardId)
+    .where('userId', '==', currentUser.uid)
     .onSnapshot(snapshot => {
         document.querySelectorAll('.kanban-col').forEach(col => col.innerHTML='')
         snapshot.forEach((doc) => {
             const task = doc.data()
             const card = document.createElement('div')
-            card.clasName='card p-2 kanban-task'
+            card.className='card p-2 kanban-task'
             card.draggable = true
             card.dataset.id = doc.id
-             li.innnerHTML = 
+            card.innerHTML = 
                 `
                 <strong>${task.text}</strong>
                 <small>${task.assigned}</small>
-                <span class="badge bg-${getStatusColor(task.status)}>${task.status}</span>
-                <span class="badge bg-${getPriorityColor(task.priority)}>${task.priority}</span>
+                <span class="badge bg-${getStatusColor(task.status)}">${task.status}</span>
+                <span class="badge bg-${getPriorityColor(task.priority)}">${task.priority}</span>
                 <button class="btn btn-sm btn-outline-danger">🗑</button>
                 `
             //drag events
             card.addEventListener('dragstart', e => {
-                e.preventDefault()
                 e.dataTransfer.setData('taskId', doc.id)
             })
-            card.querySelector('button').onclik = () => db.collection ('task').doc(doc.id).delete() // Checkbox para marcar como hecho
+            card.querySelector('button').onclick = () => db.collection('tasks').doc(doc.id).delete()
 
-            const col = document.querySelector('.kanban-col[data-status="${task.status}"')
+            const col = document.querySelector(`.kanban-col[data-status="${task.status}"]`)
+            if (col) {
+                col.appendChild(card)
+            }
         })
     })
-
-    if (!currentBoardId || !currentUser) return;
-    
-    db.collection('tasks')
-        .where('boardId', '==', currentBoardId)
-        .where('userId', '==', currentUser.uid) 
-        .onSnapshot((tareas) => {
-            pendingTasks.innerHTML = '';
-            doneTasks.innerHTML = '';
-            
-            tareas.forEach((doc) => {
-                const task = doc.data();
-                const li = document.createElement('li');
-                li.classList = 'list-group-item d-flex justify-content-between align-items-center';
-
-                // card de las tareas
-                li.innnerHTML = 
-                `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${task.text}</strong>
-                        <small>${task.assigned}</small>
-                        <span class="badge bg-${getStatusColor(task.status)}>${task.status}</span>
-                        <span class="badge bg-${getPriorityColor(task.priority)}>${task.priority}</span>
-                    <div>
-                    <div>
-                    <button class="btn btn-sm btn-outline-danger">🗑</button>
-                    </div>
-                <div> 
-                `
-                li.querySelector('button').onclik = () => db.collection ('task').doc(doc.id).delete() // Checkbox para marcar como hecho
-                            
-                if (task.done) {
-                    doneTasks.appendChild(li);
-                } else {
-                    pendingTasks.appendChild(li);
-                }
-            });
-        });
 };
 
 // Agregar evento para crear tareas
@@ -298,9 +262,9 @@ const renderKanban = () => {
         col.innerHTML = 
         `
         <h5 class='text-center'>${status}</h5>
-        <div class='kanban-col' data-spurce='${status}'></div>
+        <div class='kanban-col' data-status='${status}'></div>
         `
-        kanbanBoard.apppendChild(col)
+        kanbanBoard.appendChild(col)
 
         // Eventos Drag & Drop
         const dropZone = col.querySelector('.kanban-col')
@@ -314,8 +278,16 @@ const renderKanban = () => {
         dropZone.addEventListener('drop', e => {
             e.preventDefault()
             dropZone.classList.remove('drag-over')
-            const taskId = e.dragTranfer.getData('taskId')
+            const taskId = e.dataTransfer.getData('taskId')
             updateTaskStatus(taskId, status)
         })
+    })
+}
+
+// Función para actualizar el estado de la tarea
+const updateTaskStatus = (taskId, newStatus) => {
+    db.collection('tasks').doc(taskId).update({
+        status: newStatus,
+        done: newStatus === 'Hecho'
     })
 }

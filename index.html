@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Monday Clone - ❤️</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <!-- <link href="css/style.css" rel="stylesheet"> -->
+    <link href="css/style.css" rel="stylesheet">
 
     <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore-compat.js"></script>
@@ -46,21 +46,21 @@
               <div class="card p-3 mb-4">
                 <div class="row g-2">
                   <div class="col-md-3">
-                    <input id="taskInput" type="text" class="forml-control" placeholder="Tarea..." disabled>
+                    <input id="taskInput" type="text" class="form-control" placeholder="Tarea..." disabled>
                   </div>
                   <div class="col-md-3">
-                    <input id="assignedInput" type="text" class="forml-control" placeholder="Asignar a..." disabled>
+                    <input id="assignedInput" type="text" class="form-control" placeholder="Asignar a..." disabled>
                   </div>
                   <div class="col-md-3">
                     <select id="statusInput" class="form-select" disabled>
                       <option value="Pendiente">Pendiente</option>
-                      <option value="En progreso">En progreso</option>
+                      <option value="En Progreso">En Progreso</option>
                       <option value="Bloqueado">Bloqueado</option>
                       <option value="Hecho">Hecho</option>
                     </select>
                   </div>
                   <div class="col-md-2">
-                    <select id="prioriryInput" class="form-select" disabled>
+                    <select id="priorityInput" class="form-select" disabled>
                       <option value="Alta">Alta</option>
                       <option value="Media" selected>Media</option>
                       <option value="Baja">Baja</option>
