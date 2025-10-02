@@ -64,6 +64,7 @@ auth.onAuthStateChanged(user => {
         boardList.disabled = false
         boardInput.disabled = false
         addBoardBtn.disabled = false
+        disableTaskForm()
         loadBoards() 
     }else {
         currentUser = null
@@ -75,8 +76,7 @@ auth.onAuthStateChanged(user => {
         boardList.innerHTML = ''
         boardList.disabled = true
         boardTitle.textContent = 'Inicia sesion para ver tus tableros'
-        taskInput.disabled = true
-        addTaskBtn.disabled = true
+        disableTaskForm()
         pendingTasks.innerHTML = ''
         doneTasks.innerHTML = ''
         
