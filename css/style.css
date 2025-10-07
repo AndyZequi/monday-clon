@@ -11,7 +11,12 @@
     margin-bottom: 10px;
 }
 
-.kamban-col.drag-over {
+.kanban-col.drag-over { /* CORREGIDO: kamban-col -> kanban-col */
     background-color: #E0F7FA;
     border-color: #007BFF;
+}
+
+.nav-tabs .nav-link.active { /* CORREGIDO: nvv-tabs -> nav-tabs */
+    background-color: #0D6EFD !important;
+    color: white !important;
 }

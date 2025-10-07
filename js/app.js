@@ -23,9 +23,9 @@ const assignedInput = document.getElementById('assignedInput');
 const statusInput = document.getElementById('statusInput');
 const priorityInput = document.getElementById('priorityInput');
 const kanbanBoard = document.getElementById('kanbanBoard');
+const boardTabs = document.getElementById('boardTabs');
 
 // Referencias al tablero
-const boardTitle = document.getElementById('boardTitle');
 const boardList = document.getElementById('boardList');
 const boardInput = document.getElementById('boardInput');
 const addBoardBtn = document.getElementById('addBoardBtn');
@@ -38,7 +38,10 @@ const userInfo = document.getElementById('userInfo');
 // Variable global para el tablero actual
 let currentBoardId = null;
 let currentUser = null;
-let unsubscribeBoards = null; // Para manejar la suscripción a tableros
+let unsubscribeBoards = null;
+let listeners = {};
+
+//Estados posibles de las tareas
 const STATUSES = ['Pendiente', 'En Progreso', 'Bloqueado', 'Hecho'];
 
 //Funciones para login y logout con Google 
@@ -54,13 +57,11 @@ logoutBtn.addEventListener('click', async () => {
 
 //Evento que escucha cuando cambia de estado la autenticacion
 auth.onAuthStateChanged(user => {
-    console.log('@@ user => ', user)
     if (user){
         currentUser = user
         userInfo.textContent = user.email
         loginBtn.style.display = 'none'
         logoutBtn.style.display = 'block'
-        boardTitle.textContent = 'Selecciona un tablero'
         boardList.disabled = false
         boardInput.disabled = false
         addBoardBtn.disabled = false
@@ -75,16 +76,23 @@ auth.onAuthStateChanged(user => {
         addBoardBtn.disabled = true
         boardList.innerHTML = ''
         boardList.disabled = true
-        boardTitle.textContent = 'Inicia sesion para ver tus tableros'
         disableTaskForm()
         pendingTasks.innerHTML = ''
         doneTasks.innerHTML = ''
+        boardTabs.innerHTML = ''
+        resetKanban()
         
         // Cancelar la suscripción a tableros cuando cierra sesión
         if (unsubscribeBoards) {
             unsubscribeBoards();
             unsubscribeBoards = null;
         }
+        
+        // Cancelar todos los listeners de tareas
+        Object.values(listeners).forEach(unsubscribe => {
+            if (unsubscribe) unsubscribe();
+        });
+        listeners = {};
     }
 })
 
@@ -104,11 +112,6 @@ addBoardBtn.addEventListener('click', async () => {
 // Función para cargar tableros del usuario actual
 const loadBoards = () => {
     if (!currentUser) return;
-    
-    // Cancelar suscripción anterior si existe
-    if (unsubscribeBoards) {
-        unsubscribeBoards();
-    }
     
     // Escuchar cambios en los tableros del usuario actual
     unsubscribeBoards = db.collection('boards')
@@ -136,13 +139,72 @@ const loadBoards = () => {
         });
 };
 
+//Abrir la pestaña del tablero 
+const oppenBoard = (id, name) => {
+    currentBoardId = id;
+    if (!document.getElementById(`tab-${id}`)) {
+        const li = document.createElement('li')
+        li.className = 'nav-item'
+        li.innerHTML = 
+        `
+        <button class="nav-link" id="tab-${id}" data-id="${id}">
+            ${name} ❌
+        </button>
+        `
+    
+        boardTabs.appendChild(li)
+
+        li.querySelector('button').addEventListener('click', (e) => {
+            // Verificar si se hizo click en la X (últimos 10px del botón)
+            const button = e.currentTarget;
+            const clickX = e.offsetX;
+            const buttonWidth = button.offsetWidth;
+            
+            if (clickX > buttonWidth - 20) { // Click en la X
+                // Cerrar pestaña
+                li.remove()
+                if (listeners[id]) {
+                    listeners[id]()
+                    delete listeners[id]
+                }
+                
+                // Si hay más pestañas, activar la primera
+                if (boardTabs.children.length > 0) {
+                    const firstTab = boardTabs.children[0].querySelector('button')
+                    const tabId = firstTab.dataset.id
+                    const tabName = firstTab.textContent.replace(' ❌', "")
+                    setActiveTab(tabId)
+                } else {
+                    // Si no hay pestañas, resetear
+                    currentBoardId = null
+                    disableTaskForm()
+                    resetKanban()
+                }
+            } else {
+                // Click en el nombre - activar pestaña
+                setActiveTab(id)
+            }
+        })
+    }
+    setActiveTab(id)
+}
+
+// Activar pestaña 
+const setActiveTab = id => {
+    document.querySelectorAll('#boardTabs .nav-link').forEach((btn) => btn.classList.remove('active'))
+    const activeTab = document.getElementById(`tab-${id}`)
+    if (activeTab) {
+        activeTab.classList.add('active')
+    }
+    currentBoardId = id
+    enableTaskForm()
+    renderKanban()
+    loadTasks(id)
+}
+
 // Función para seleccionar un tablero
 const selectBoard = (id, name) => {
-    currentBoardId = id;
-    boardTitle.textContent = `📋 ${name}`; 
-    renderKanban();
-    enableTaskForm();
-    loadTasks();
+    oppenBoard(id, name);
 };
 
 // Funcion para habilitar inputs del formuladio de tareas
@@ -184,32 +246,53 @@ const getPriorityColor = (priority) => {
 }
 
 // Cargar tareas del tablero seleccionado
-const loadTasks = () => {
-    if (!currentBoardId || !currentUser) return;
+const loadTasks = (boardId) => {
+    if (!boardId || !currentUser) {
+        console.log('No boardId or user:', {boardId, currentUser})
+        return;
+    }
 
-    db.collection('tasks')
-    .where('boardId', '==', currentBoardId)
+    // Cancelar listener anterior si existe
+    if (listeners[boardId]) {
+        listeners[boardId]()
+    }
+
+    console.log('Cargando tareas para board:', boardId)
+    
+    listeners[boardId] = db.collection('tasks')
+    .where('boardId', '==', boardId)
     .where('userId', '==', currentUser.uid)
     .onSnapshot(snapshot => {
-        document.querySelectorAll('.kanban-col').forEach(col => col.innerHTML='')
+        console.log('Tareas recibidas:', snapshot.size)
+        document.querySelectorAll('.kanban-col').forEach(col => col.innerHTML = '')
         snapshot.forEach((doc) => {
             const task = doc.data()
             const card = document.createElement('div')
-            card.className='card p-2 kanban-task'
+            card.className = 'card p-2 kanban-task mb-2'
             card.draggable = true
             card.dataset.id = doc.id
             card.innerHTML = 
                 `
                 <strong>${task.text}</strong>
-                <small>${task.assigned}</small>
+                <small class="d-block">${task.assigned}</small>
                 <span class="badge bg-${getStatusColor(task.status)}">${task.status}</span>
                 <span class="badge bg-${getPriorityColor(task.priority)}">${task.priority}</span>
-                <button class="btn btn-sm btn-outline-danger">🗑</button>
+                <button class="btn btn-sm btn-outline-danger mt-1">🗑</button>
                 `
-            //drag events
+            
+            // Drag events
             card.addEventListener('dragstart', e => {
                 e.dataTransfer.setData('taskId', doc.id)
+                e.dataTransfer.setData('boardId', boardId)
+                setTimeout(() => {
+                    card.style.opacity = '0.4'
+                }, 0)
             })
+            
+            card.addEventListener('dragend', e => {
+                card.style.opacity = '1'
+            })
+
             card.querySelector('button').onclick = () => db.collection('tasks').doc(doc.id).delete()
 
             const col = document.querySelector(`.kanban-col[data-status="${task.status}"]`)
@@ -217,6 +300,8 @@ const loadTasks = () => {
                 col.appendChild(card)
             }
         })
+    }, (error) => {
+        console.error('Error cargando tareas:', error)
     })
 };
 
@@ -240,10 +325,8 @@ addTaskBtn.addEventListener('click', async () => {
         });
         taskInput.value = '';
         assignedInput.value = '';
-        statusInput.value = 'Pendiente';
-        priorityInput.value = 'Media';
-    }else {
-        alert('Por favor, seleciona un tablero y escribe una tarea.');
+    } else {
+        alert('Por favor, selecciona un tablero y completa todos los campos.');
     }
 });
 
@@ -272,14 +355,21 @@ const renderKanban = () => {
             e.preventDefault();
             dropZone.classList.add('drag-over')
         })
+        
         dropZone.addEventListener('dragleave', () => {
             dropZone.classList.remove('drag-over')
         })
+        
         dropZone.addEventListener('drop', e => {
             e.preventDefault()
             dropZone.classList.remove('drag-over')
             const taskId = e.dataTransfer.getData('taskId')
-            updateTaskStatus(taskId, status)
+            const taskBoardId = e.dataTransfer.getData('boardId')
+            
+            // Solo actualizar si la tarea pertenece al tablero actual
+            if (taskBoardId === currentBoardId) {
+                updateTaskStatus(taskId, status)
+            }
         })
     })
 }
@@ -289,5 +379,19 @@ const updateTaskStatus = (taskId, newStatus) => {
     db.collection('tasks').doc(taskId).update({
         status: newStatus,
         done: newStatus === 'Hecho'
+    }).catch(error => {
+        console.error('Error actualizando tarea:', error)
     })
 }
+
+const resetKanban = () => {
+    kanbanBoard.innerHTML = 
+    `
+    <div class="col-12 text-center">
+        <p class="text-muted">Selecciona un tablero para comenzar</p>
+    </div>
+    `
+}
+
+// Inicializar
+resetKanban()
